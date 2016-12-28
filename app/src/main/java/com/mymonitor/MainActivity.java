@@ -1,5 +1,6 @@
 package com.mymonitor;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -18,10 +19,10 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String TAG = "BCReceiver";
     private LinearLayout rootLayout;
     private Button accesscBt;
     private Button accesscStartNo;
@@ -78,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
         updateServiceStatus(true);
     }
 
-    public void setTextView1(String str){
+    public void setTextView1(String str) {
         textView1.setText(str);
     }
 
@@ -134,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToUi(RemoteViews remoteView, String packName) {
-        //rootLayout.addView(remoteView);
+//        rootLayout.addView(remoteView);
         try {
             View v1 = remoteView.apply(this, rootLayout);
             //AppLog.i("remoteview:" + v1.toString());
@@ -155,21 +156,53 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void addToUi(String packName, Notification notification) {
+        try {
+            final PushMessCache.MessageData data = pushIns.new MessageData();
+
+            data.packageName = packName;
+            data.isChina = PackName.isChina(packName);
+            data.title = notification.tickerText.toString().split(":")[0];
+            data.message = notification.tickerText.toString().split(":")[1];
+            Toast.makeText(this, "发送信息到服务器", Toast.LENGTH_SHORT).show();
+            pushIns.sendMess(url, this, data);
+        } catch (Exception e) {
+            Toast.makeText(this, "发送失败啦.....", Toast.LENGTH_SHORT).show();
+            AppLog.e("addToUi excep", e);
+        }
+    }
+
+    @SuppressLint("NewApi")
     public static void notifyReceive(String packageName, Notification notification) {
         PendingIntent nit = notification.contentIntent;
 
         AppLog.i("onReceive packageName: " + packageName);
 
         if (notification != null) {
-            RemoteViews remoteV = notification.contentView;
-            if (remoteV == null) {
-                AppLog.e("remoteView is: null");
-            } else {
-                if (activity != null)
-                    activity.addToUi(remoteV, packageName);
-                else
-                    AppLog.e("MainActivity is null");
-            }
+
+            if (activity != null)
+                activity.addToUi(packageName, notification);
+            else
+                AppLog.e("MainActivity is null");
+//            RemoteViews remoteV = notification.contentView;
+//            if (remoteV == null) {
+//                AppLog.e("remoteView is: null");
+//                //自己创建一个RemoteViews
+//                RemoteViews remoteViews = new RemoteViews(packageName, R.layout.remote_view);
+//                String[] str = notification.tickerText.toString().split(":");
+//                remoteViews.setImageViewIcon(R.id.iv_view, notification.getSmallIcon());
+//                remoteViews.setTextViewText(R.id.tv_nickName, str[0]);
+//                remoteViews.setTextViewText(R.id.tv_content, str[1]);
+//                if (activity != null)
+//                    activity.addToUi(remoteViews, packageName);
+//                else
+//                    AppLog.e("MainActivity is null");
+//            } else {
+//                if (activity != null)
+//                    activity.addToUi(remoteV, packageName);
+//                else
+//                    AppLog.e("MainActivity is null");
+//            }
         }
     }
 
@@ -210,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if ("url".equals(item.getTitle().toString().toLowerCase())){
+        if ("url".equals(item.getTitle().toString().toLowerCase())) {
             DialogUtils.dialogCenterEditText(this, new DialogUtils.OnDialogCallback() {
                 @Override
                 public void dialogCallback(String dialogStr) {
@@ -223,8 +256,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        //if(receiver != null)
-        //	this.unregisterReceiver(receiver);
+//        if(receiver != null)
+//        	this.unregisterReceiver(receiver);
         super.onDestroy();
         updateServiceStatus(false);
     }
