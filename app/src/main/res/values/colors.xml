@@ -6,4 +6,7 @@
 
     <color name="bg_color">#F5F5F5</color>
     <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="gray">#9F9FA0</color>
+    <color name="red">#EB5A5A</color>
 </resources>

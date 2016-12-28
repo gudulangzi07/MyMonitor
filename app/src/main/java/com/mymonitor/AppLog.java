@@ -5,7 +5,6 @@ import android.util.Log;
 
 import java.io.File;
 
-
 public class AppLog {
     public final static String TAG = "BC_REC";
     public final static String Enter = "\r\n";
@@ -34,21 +33,18 @@ public class AppLog {
     public static void error(String tag, String msg) {
         if (log_level >= LEVEL_ERROR) {
             Log.e(tag, msg);
-
         }
     }
 
     public static void warn(String tag, String msg) {
         if (log_level >= LEVEL_WARN) {
             Log.w(tag, msg);
-
         }
     }
 
     public static void info(String tag, String msg) {
         if (log_level >= LEVEL_INFO) {
             Log.i(tag, msg);
-
         }
     }
 

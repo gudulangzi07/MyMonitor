@@ -105,21 +105,26 @@ public class PushMessCache {
         return bIn;
     }
 
-    public boolean sendMess(String url, final FragmentActivity fragmentActivity, MessageData data) {
+    public boolean sendMess(final FragmentActivity fragmentActivity, MessageData data) {
         Map<String, String> hashMap = new HashMap<>();
         hashMap.put("title", data.title);
         hashMap.put("time", data.timeText);
         hashMap.put("message", data.message);
         hashMap.put("packageName", data.packageName);
         //发送到你指定的地方
-        if (!TextUtils.isEmpty(url)){
-            OkHttpUtils.get().url(url).params(hashMap).build().execute(new Callback() {
+        if (!TextUtils.isEmpty(PreferenceManager.getInstance().getSettingUrlNotification())){
+            OkHttpUtils
+                    .get()
+                    .url(PreferenceManager.getInstance().getSettingUrlNotification())
+                    .params(hashMap)
+                    .build()
+                    .execute(new Callback() {
                 @Override
                 public Object parseNetworkResponse(final Response response) throws Exception {
                     fragmentActivity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            ((MainActivity)fragmentActivity).setTextView1(response.code() + "==" +response.body().toString());
+//                            Toast.makeText(fragmentActivity, "发送的服务器成功", Toast.LENGTH_SHORT).show();
                         }
                     });
                     return null;

@@ -17,7 +17,6 @@ import java.util.Map;
 public class NeNotificationService extends AccessibilityService {
 
     private static String qqpimsecure = "com.tencent.qqpimsecure";
-    //public static String TAG = "NeNotificationService";
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
