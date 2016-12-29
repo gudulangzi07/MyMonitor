@@ -18,7 +18,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.MainActivity"
             android:label="@string/app_name"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -28,12 +28,12 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".CatServices">
+        <service android:name=".service.CatServices">
 
         </service>
 
         <service
-            android:name=".NeNotificationService"
+            android:name=".service.NeNotificationService"
             android:enabled="true"
             android:exported="false"
             android:label="AndNotifyMonitor"

@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">AndMonitor</string>
+    <string name="app_name">小程序</string>
     <string name="action_settings">Settings</string>
     <string name="action_url">url</string>
-    <string name="hello_world">Notification Monitor</string>
 
     <string name="toast_service_status">服务已经开启</string>
     <string name="toast_service_fail">发送失败啦.....</string>

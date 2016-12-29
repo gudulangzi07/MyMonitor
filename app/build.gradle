@@ -25,7 +25,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    android{compileOptions.encoding="GBK"}
 }
 
 dependencies {
