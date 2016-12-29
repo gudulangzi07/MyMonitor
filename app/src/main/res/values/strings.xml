@@ -6,6 +6,9 @@
     <string name="action_url">url</string>
     <string name="hello_world">Notification Monitor</string>
 
+    <string name="toast_service_status">服务已经开启</string>
+    <string name="toast_service_fail">发送失败啦.....</string>
+
     <!-- XRecycleView -->
     <string name="listview_header_hint_normal">下拉刷新</string>
     <string name="listview_header_hint_release">释放立即刷新</string>

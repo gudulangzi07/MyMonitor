@@ -9,7 +9,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
-import com.mmbuycar.merchant.widget.XRecyclerView.LoadingMoreFooter;
+import com.mymonitor.XRecyclerView.LoadingMoreFooter;
 
 public class DividerItemDecoration extends RecyclerView.ItemDecoration {
 

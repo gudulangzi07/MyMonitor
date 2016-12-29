@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class NeNotificationService extends AccessibilityService {
 
     private static String qqpimsecure = "com.tencent.qqpimsecure";

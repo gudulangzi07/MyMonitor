@@ -5,13 +5,14 @@ android {
     buildToolsVersion '24.0.0'
     defaultConfig {
         applicationId "com.mymonitor"
-        minSdkVersion 18
+        minSdkVersion 14
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
         jackOptions {
             enabled true
         }
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -23,6 +24,8 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    android{compileOptions.encoding="GBK"}
 }
 
 dependencies {
@@ -30,6 +33,6 @@ dependencies {
     compile project(':okhttputils')
     compile 'com.android.support:support-v4:24.0.0'
     compile 'com.android.support:appcompat-v7:24.0.0'
-    compile 'com.android.support:recyclerview-v7:24.1.0'
-    compile 'com.android.support:design:24.1.0'
+    compile 'com.android.support:design:24.2.1'
+    compile 'com.android.support:recyclerview-v7:24.2.1'
 }
