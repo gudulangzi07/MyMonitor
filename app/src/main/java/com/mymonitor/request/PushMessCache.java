@@ -3,7 +3,6 @@ package com.mymonitor.request;
 import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
 
-import com.mymonitor.bean.PackName;
 import com.mymonitor.utils.AppLog;
 import com.mymonitor.utils.PreferenceManager;
 import com.zhy.http.okhttp.OkHttpUtils;
@@ -32,6 +31,7 @@ public class PushMessCache {
         public Date date;
         public boolean isChina;
         public String docID;
+        public int index;
 
         public MessageData() {
             date = new Date();
@@ -41,6 +41,7 @@ public class PushMessCache {
             packageName = "";
             isChina = false;
             docID = "";
+            index = 1;
         }
 
         public void print() {
@@ -68,9 +69,7 @@ public class PushMessCache {
     public Vector<MessageData> messVec = new Vector<MessageData>();
 
     public void addMess(int label_Id, MessageData data, String txt) {
-        int id_i = PackName.checkID(data.packageName, label_Id);
-
-        switch (id_i) {
+        switch (data.index ++){
             case UNKNOWN_INDEX:
 
                 break;
@@ -86,6 +85,24 @@ public class PushMessCache {
             default:
                 break;
         }
+//        int id_i = PackName.checkID(data.packageName, label_Id);
+//
+//        switch (id_i) {
+//            case UNKNOWN_INDEX:
+//
+//                break;
+//            case TITLE_INDEX:
+//                data.title = txt;
+//                break;
+//            case TIME_INDEX:
+//                data.timeText = txt;
+//                break;
+//            case TEXT_INDEX:
+//                data.message = txt;
+//                break;
+//            default:
+//                break;
+//        }
     }
 
     private boolean news_exist(MessageData data) {

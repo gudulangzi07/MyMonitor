@@ -2,32 +2,32 @@ package com.mymonitor.activity;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mymonitor.R;
 import com.mymonitor.adapter.MyAdapter;
-import com.mymonitor.service.NeNotificationService;
 import com.mymonitor.bean.NotificationBean;
 import com.mymonitor.bean.PackName;
-import com.mymonitor.utils.PreferenceManager;
 import com.mymonitor.request.PushMessCache;
-import com.mymonitor.R;
+import com.mymonitor.service.NeNotificationService;
+import com.mymonitor.utils.AppLog;
+import com.mymonitor.utils.DialogUtils;
+import com.mymonitor.utils.PreferenceManager;
+import com.mymonitor.utils.util;
 import com.mymonitor.widget.XRecyclerView.ProgressStyle;
 import com.mymonitor.widget.XRecyclerView.XRecyclerView;
 import com.mymonitor.widget.XRecyclerView.decoration.DividerItemDecoration;
-import com.mymonitor.utils.util;
-import com.mymonitor.utils.AppLog;
-import com.mymonitor.utils.DialogUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -80,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
             notificationBeans.clear();
             myAdapter.setNotificationBeans(notificationBeans);
             myAdapter.notifyDataSetChanged();
-            NotificationManager nm = (NotificationManager) MainActivity.this.getSystemService(Context.NOTIFICATION_SERVICE);
         });
         updateServiceStatus(true);
 
@@ -120,6 +119,13 @@ public class MainActivity extends AppCompatActivity {
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             final PushMessCache.MessageData data = pushIns.new MessageData();
 
+            if (notification.contentView != null){
+                LinearLayout linearLayout = new LinearLayout(this);
+                View view = notification.contentView.apply(this, linearLayout);
+
+                EnumGroupViews(view, data);
+            }
+
             data.packageName = packName;
             data.isChina = PackName.isChina(packName);
             data.title = notification.tickerText.toString().split(":")[0];
@@ -145,17 +151,37 @@ public class MainActivity extends AppCompatActivity {
 
             pushIns.sendMess(this, data);
         } catch (Exception e) {
-            Toast.makeText(this, R.string.toast_service_fail, Toast.LENGTH_SHORT).show();
+            runOnUiThread(() -> Toast.makeText(activity, R.string.toast_service_fail, Toast.LENGTH_SHORT).show());
             AppLog.e("addToUi excep", e);
+        }
+    }
+
+    private void EnumGroupViews(View v1, PushMessCache.MessageData data) {
+        if (v1 instanceof ViewGroup) {
+            ViewGroup lav = (ViewGroup) v1;
+            int lcCnt = lav.getChildCount();
+            for (int i = 0; i < lcCnt; i++) {
+                View c1 = lav.getChildAt(i);
+                if (c1 instanceof ViewGroup)
+                    EnumGroupViews(c1, data);
+                else if (c1 instanceof TextView) {
+                    TextView txt = (TextView) c1;
+                    String str = txt.getText().toString().trim();
+                    if (str.length() > 0) {
+                        pushIns.addMess(txt.getId(), data, str);
+                    }
+                    AppLog.i("TextView id:" + txt.getId() + ".text:" + str);
+                } else {
+                    AppLog.w("2 other layout:" + c1.toString());
+                }
+            }
+        } else {
+            AppLog.w("1 other layout:" + v1.toString());
         }
     }
 
     @SuppressLint("NewApi")
     public static void notifyReceive(String packageName, Notification notification) {
-        PendingIntent nit = notification.contentIntent;
-
-        AppLog.i("onReceive packageName: " + packageName);
-
         if (notification != null) {
             if (activity != null)
                 activity.addToUi(packageName, notification);
