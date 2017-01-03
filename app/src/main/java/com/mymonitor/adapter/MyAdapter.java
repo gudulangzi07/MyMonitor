@@ -37,7 +37,7 @@ public class MyAdapter extends XRecyclerView.Adapter<MyAdapter.ViewHolder> {
         NotificationBean notificationBean = notificationBeans.get(position);
         if (notificationBean != null) {
             if (notificationBean.drawable == null){
-                holder.iv_icon.setImageResource(R.drawable.ic_launcher);
+                holder.iv_icon.setImageResource(R.drawable.notification_logo);
             }else{
                 holder.iv_icon.setImageDrawable(notificationBean.drawable);
             }
