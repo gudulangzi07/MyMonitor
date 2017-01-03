@@ -124,19 +124,20 @@ public class MainActivity extends AppCompatActivity {
                 View view = notification.contentView.apply(this, linearLayout);
 
                 EnumGroupViews(view, data);
+            }else{
+                data.title = notification.tickerText.toString().split(":")[0];
+                data.message = notification.tickerText.toString().split(":")[1];
+                data.timeText = simpleDateFormat.format(new Date(notification.when));
             }
 
             data.packageName = packName;
             data.isChina = PackName.isChina(packName);
-            data.title = notification.tickerText.toString().split(":")[0];
-            data.message = notification.tickerText.toString().split(":")[1];
-            data.timeText = simpleDateFormat.format(new Date(notification.when));
             data.date = new Date(notification.when);
 
             NotificationBean notificationBean = new NotificationBean();
-            notificationBean.title = notification.tickerText.toString().split(":")[0];
-            notificationBean.message = notification.tickerText.toString().split(":")[1];
-            notificationBean.timeText = simpleDateFormat.format(new Date(notification.when));
+            notificationBean.title = data.title;
+            notificationBean.message = data.message;
+            notificationBean.timeText = data.timeText;
 
 //            notificationBean.drawable = notification.getLargeIcon().loadDrawable(this);
             if (notificationBeans.size() == 30){
