@@ -2,12 +2,21 @@ package com.mymonitor.request;
 
 import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
+import android.widget.Toast;
 
 import com.mymonitor.utils.AppLog;
 import com.mymonitor.utils.PreferenceManager;
+import com.mymonitor.utils.VerifyCheck;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.Callback;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -69,7 +78,7 @@ public class PushMessCache {
     public Vector<MessageData> messVec = new Vector<MessageData>();
 
     public void addMess(int label_Id, MessageData data, String txt) {
-        switch (data.index ++){
+        switch (data.index++) {
             case UNKNOWN_INDEX:
 
                 break;
@@ -132,34 +141,91 @@ public class PushMessCache {
         hashMap.put("message", data.message);
         hashMap.put("packageName", data.packageName);
         //发送到你指定的地方
-        if (!TextUtils.isEmpty(PreferenceManager.getInstance().getSettingUrlNotification())){
-            OkHttpUtils
-                    .get()
-                    .url(PreferenceManager.getInstance().getSettingUrlNotification())
-                    .params(hashMap)
-                    .build()
-                    .execute(new Callback() {
-                @Override
-                public Object parseNetworkResponse(final Response response) throws Exception {
+        if (!TextUtils.isEmpty(PreferenceManager.getInstance().getSettingUrlNotification())) {
+            if ("0".equals(PreferenceManager.getInstance().getSettingMethod())) {
+                OkHttpUtils
+                        .get()
+                        .url(PreferenceManager.getInstance().getSettingUrlNotification())
+                        .params(hashMap)
+                        .build()
+                        .execute(new Callback() {
+                            @Override
+                            public Object parseNetworkResponse(final Response response) throws Exception {
+                                fragmentActivity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+//                            Toast.makeText(fragmentActivity, "发送的服务器成功", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                                return true;
+                            }
+
+                            @Override
+                            public void onError(Call call, Exception e) {
+
+                            }
+
+                            @Override
+                            public void onResponse(Object response) {
+
+                            }
+                        });
+            } else if ("1".equals(PreferenceManager.getInstance().getSettingMethod())) {
+                String[] strings = PreferenceManager.getInstance().getSettingUrlNotification().split(":");
+                if (VerifyCheck.isIPVerify(strings[0])) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Socket socket = null;
+                            try {
+                                socket = new Socket(strings[0], Integer.parseInt(strings[1]));
+                            } catch (IOException e) {
+                                fragmentActivity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(fragmentActivity, "网络端口连接异常", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                                e.printStackTrace();
+                            }
+                            try {
+                                //2、获取输出流，向服务器端发送信息
+                                OutputStream os = socket.getOutputStream();//字节输出流
+                                PrintWriter pw = new PrintWriter(os);//将输出流包装成打印流
+                                pw.write(hashMap.toString());
+                                pw.flush();
+                                socket.shutdownOutput();
+                                //3、获取输入流，并读取服务器端的响应信息
+                                InputStream is = socket.getInputStream();
+                                BufferedReader br = new BufferedReader(new InputStreamReader(is));
+                                String info = null;
+                                while ((info = br.readLine()) != null) {
+                                    System.out.println("客户端返回信息" + info);
+                                }
+                                //4、关闭资源
+                                br.close();
+                                is.close();
+                                pw.close();
+                                os.close();
+                                socket.close();
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).start();
+
+                } else {
                     fragmentActivity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-//                            Toast.makeText(fragmentActivity, "发送的服务器成功", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(fragmentActivity, "IP不正常", Toast.LENGTH_SHORT).show();
                         }
                     });
-                    return null;
+                    return false;
                 }
 
-                @Override
-                public void onError(Call call, Exception e) {
-
-                }
-
-                @Override
-                public void onResponse(Object response) {
-
-                }
-            });
+            }
         }
         return false;
     }

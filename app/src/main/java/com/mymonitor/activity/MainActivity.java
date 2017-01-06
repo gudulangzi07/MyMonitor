@@ -206,6 +206,11 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, 0);
                 break;
             case R.id.action_url:
+                PreferenceManager.getInstance().setSettingMethod("0");
+                DialogUtils.dialogCenterEditText(this, dialogStr -> PreferenceManager.getInstance().setSettingUrlNotification(dialogStr));
+                break;
+            case R.id.action_socket:
+                PreferenceManager.getInstance().setSettingMethod("1");
                 DialogUtils.dialogCenterEditText(this, dialogStr -> PreferenceManager.getInstance().setSettingUrlNotification(dialogStr));
                 break;
         }

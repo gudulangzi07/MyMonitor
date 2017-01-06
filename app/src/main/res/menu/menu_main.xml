@@ -15,4 +15,11 @@
         android:title="@string/action_url"
         tools:ignore="AppCompatResource"/>
 
+    <item
+        android:id="@+id/action_socket"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/action_socket"
+        tools:ignore="AppCompatResource"/>
+
 </menu>

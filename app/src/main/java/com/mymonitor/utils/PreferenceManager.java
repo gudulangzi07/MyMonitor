@@ -16,6 +16,7 @@ public class PreferenceManager {
     private static SharedPreferences mSharedPreferences;
     private static SharedPreferences.Editor editor;
     private static String SHARED_KEY_SETTING_NOTIFICATION = "shared_key_setting_notification";
+    private static String SHARED_KEY_METHOD = "shared_key_method";
 
     public static synchronized PreferenceManager getInstance(){
         if (mPreferencemManager == null) {
@@ -43,5 +44,14 @@ public class PreferenceManager {
 
     public String getSettingUrlNotification(){
         return mSharedPreferences.getString(SHARED_KEY_SETTING_NOTIFICATION, null);
+    }
+
+    public void setSettingMethod(String method) {
+        editor.putString(SHARED_KEY_METHOD, method);
+        editor.apply();
+    }
+
+    public String getSettingMethod(){
+        return mSharedPreferences.getString(SHARED_KEY_METHOD, null);
     }
 }
