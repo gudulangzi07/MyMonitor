@@ -4,19 +4,16 @@ import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
 import android.widget.Toast;
 
+import com.mymonitor.SoftApplication;
 import com.mymonitor.utils.AppLog;
 import com.mymonitor.utils.PreferenceManager;
 import com.mymonitor.utils.VerifyCheck;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.Callback;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.net.Socket;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -176,38 +173,29 @@ public class PushMessCache {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            Socket socket = null;
-                            try {
-                                socket = new Socket(strings[0], Integer.parseInt(strings[1]));
-                            } catch (IOException e) {
-                                fragmentActivity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(fragmentActivity, "网络端口连接异常", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                                e.printStackTrace();
+                            if (!SoftApplication.socket.isConnected()) {
+                                System.out.println("连接不正常");
                             }
                             try {
                                 //2、获取输出流，向服务器端发送信息
-                                OutputStream os = socket.getOutputStream();//字节输出流
+                                OutputStream os = SoftApplication.socket.getOutputStream();//字节输出流
                                 PrintWriter pw = new PrintWriter(os);//将输出流包装成打印流
                                 pw.write(hashMap.toString());
                                 pw.flush();
-                                socket.shutdownOutput();
+                                //SoftApplication.socket.shutdownOutput();
                                 //3、获取输入流，并读取服务器端的响应信息
-                                InputStream is = socket.getInputStream();
-                                BufferedReader br = new BufferedReader(new InputStreamReader(is));
-                                String info = null;
-                                while ((info = br.readLine()) != null) {
-                                    System.out.println("客户端返回信息" + info);
-                                }
-                                //4、关闭资源
-                                br.close();
-                                is.close();
+//                                    InputStream is = SoftApplication.socket.getInputStream();
+//                                    BufferedReader br = new BufferedReader(new InputStreamReader(is));
+//                                    String info = null;
+//                                    while ((info = br.readLine()) != null) {
+//                                        System.out.println("客户端返回信息" + info);
+//                                    }
+//                                    //4、关闭资源
+//                                    br.close();
+//                                    is.close();
                                 pw.close();
                                 os.close();
-                                socket.close();
+                                //SoftApplication.socket.close();
 
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -227,6 +215,7 @@ public class PushMessCache {
 
             }
         }
+
         return false;
     }
 
