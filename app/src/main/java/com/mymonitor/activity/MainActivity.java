@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.view.Menu;
@@ -28,6 +29,10 @@ import com.mymonitor.utils.util;
 import com.mymonitor.widget.XRecyclerView.ProgressStyle;
 import com.mymonitor.widget.XRecyclerView.XRecyclerView;
 import com.mymonitor.widget.XRecyclerView.decoration.DividerItemDecoration;
+import com.vilyever.socketclient.SocketClient;
+import com.vilyever.socketclient.helper.SocketClientDelegate;
+import com.vilyever.socketclient.helper.SocketResponsePacket;
+import com.vilyever.socketclient.util.CharsetUtil;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -51,6 +56,11 @@ public class MainActivity extends AppCompatActivity {
     private Intent upservice;
     private static MainActivity activity = null;
     private List<NotificationBean> notificationBeans;
+    private SocketClient socketClient;
+
+    public SocketClient getSocketClient() {
+        return socketClient;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,6 +106,52 @@ public class MainActivity extends AppCompatActivity {
         xRecyclerView.setAdapter(myAdapter);
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (socketClient == null || !socketClient.isConnecting()){
+            socketClient = new SocketClient();
+            socketClient.setCharsetName(CharsetUtil.UTF_8);
+
+            socketClient.getHeartBeatHelper().setDefaultSendData(CharsetUtil.stringToData("HeartBeat", CharsetUtil.UTF_8));
+            socketClient.getHeartBeatHelper().setDefaultReceiveData(CharsetUtil.stringToData("HeartBeat", CharsetUtil.UTF_8));
+            socketClient.getHeartBeatHelper().setHeartBeatInterval(60 * 1000);// 设置自动发送心跳包的间隔时长，单位毫秒
+            socketClient.getHeartBeatHelper().setSendHeartBeatEnabled(true);// 设置允许自动发送心跳包，此值默认为 false
+
+            //实现自动重连
+            socketClient.connect();
+
+//            SocketHeartBeatHelper.SendDataBuilder sendDataBuilder = new SocketHeartBeatHelper.SendDataBuilder() {
+//                @Override
+//                public byte[] obtainSendHeartBeatData(SocketHeartBeatHelper helper) {
+//                    /**
+//                     * 使用当前日期作为心跳包
+//                     */
+//                    byte[] heartBeatPrefix = new byte[]{0x1F, 0x1F};
+//                    byte[] heartBeatSuffix = new byte[]{0x1F, 0x1F};
+//
+//                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+//                    byte[] heartBeatInfo = CharsetUtil.stringToData(sdf.format(new Date()), CharsetUtil.UTF_8);
+//
+//                    byte[] data = new byte[heartBeatPrefix.length + heartBeatSuffix.length + heartBeatInfo.length];
+//                    System.arraycopy(heartBeatPrefix, 0, data, 0, heartBeatPrefix.length);
+//                    System.arraycopy(heartBeatInfo, 0, data, heartBeatPrefix.length, heartBeatInfo.length);
+//                    System.arraycopy(heartBeatSuffix, 0, data, heartBeatPrefix.length + heartBeatInfo.length, heartBeatSuffix.length);
+//
+//                    return data;
+//                }
+//            };
+//            socketClient.getHeartBeatHelper().setSendDataBuilder(sendDataBuilder);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (socketClient.isConnecting())
+            socketClient.disconnect();
+    }
+
     private void updateServiceStatus(boolean start) {
         boolean bRunning = util.isServiceRunning(this, "com.mymonitor.service.NeNotificationService");
 
@@ -119,12 +175,12 @@ public class MainActivity extends AppCompatActivity {
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             final PushMessCache.MessageData data = pushIns.new MessageData();
 
-            if (notification.contentView != null){
+            if (notification.contentView != null) {
                 LinearLayout linearLayout = new LinearLayout(this);
                 View view = notification.contentView.apply(this, linearLayout);
 
                 EnumGroupViews(view, data);
-            }else{
+            } else {
                 data.title = notification.tickerText.toString().split(":")[0];
                 data.message = notification.tickerText.toString().split(":")[1];
                 data.timeText = simpleDateFormat.format(new Date(notification.when));
@@ -140,17 +196,36 @@ public class MainActivity extends AppCompatActivity {
             notificationBean.timeText = data.timeText;
 
 //            notificationBean.drawable = notification.getLargeIcon().loadDrawable(this);
-            if (notificationBeans.size() == 30){
+            if (notificationBeans.size() == 30) {
                 notificationBeans.remove(29);
                 notificationBeans.add(0, notificationBean);
-            }else {
+            } else {
                 notificationBeans.add(0, notificationBean);
             }
 
             myAdapter.setNotificationBeans(notificationBeans);
             myAdapter.notifyDataSetChanged();
 
+            pushIns.setSendMessageListener(message -> socketClient.registerSocketClientDelegate(new SocketClientDelegate() {
+                @Override
+                public void onConnected(SocketClient client) {
+                    // 发送String消息，使用默认编码
+                    socketClient.sendString(message);
+                }
+
+                @Override
+                public void onDisconnected(SocketClient client) {
+                    socketClient.connect();
+                }
+
+                @Override
+                public void onResponse(SocketClient client, @NonNull SocketResponsePacket responsePacket) {
+                    if (client.isDisconnecting())
+                        client.connect();
+                }
+            }));
             pushIns.sendMess(this, data);
+
         } catch (Exception e) {
             runOnUiThread(() -> Toast.makeText(activity, R.string.toast_service_fail, Toast.LENGTH_SHORT).show());
             AppLog.e("addToUi excep", e);
@@ -200,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.action_settings:
                 Intent intent = new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS);
                 startActivityForResult(intent, 0);
