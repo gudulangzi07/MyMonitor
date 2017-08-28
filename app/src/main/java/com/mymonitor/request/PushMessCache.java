@@ -4,16 +4,13 @@ import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
 import android.widget.Toast;
 
-import com.mymonitor.SoftApplication;
+import com.alibaba.fastjson.JSONObject;
 import com.mymonitor.utils.AppLog;
 import com.mymonitor.utils.PreferenceManager;
 import com.mymonitor.utils.VerifyCheck;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.Callback;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -132,11 +129,14 @@ public class PushMessCache {
     }
 
     public boolean sendMess(final FragmentActivity fragmentActivity, MessageData data) {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("title", data.title);
+        jsonObject.put("time", data.timeText);
+        jsonObject.put("message", data.message);
+        jsonObject.put("packageName", data.packageName);
+
         Map<String, String> hashMap = new HashMap<>();
-        hashMap.put("title", data.title);
-        hashMap.put("time", data.timeText);
-        hashMap.put("message", data.message);
-        hashMap.put("packageName", data.packageName);
+        hashMap.put("info", jsonObject.toJSONString());
         //发送到你指定的地方
         if (!TextUtils.isEmpty(PreferenceManager.getInstance().getSettingUrlNotification())) {
             if ("0".equals(PreferenceManager.getInstance().getSettingMethod())) {
@@ -148,12 +148,6 @@ public class PushMessCache {
                         .execute(new Callback() {
                             @Override
                             public Object parseNetworkResponse(final Response response) throws Exception {
-                                fragmentActivity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-//                            Toast.makeText(fragmentActivity, "发送的服务器成功", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
                                 return true;
                             }
 
@@ -170,46 +164,11 @@ public class PushMessCache {
             } else if ("1".equals(PreferenceManager.getInstance().getSettingMethod())) {
                 String[] strings = PreferenceManager.getInstance().getSettingUrlNotification().split(":");
                 if (VerifyCheck.isIPVerify(strings[0])) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (!SoftApplication.socket.isConnected()) {
-                                System.out.println("连接不正常");
-                            }
-                            try {
-                                //2、获取输出流，向服务器端发送信息
-                                OutputStream os = SoftApplication.socket.getOutputStream();//字节输出流
-                                PrintWriter pw = new PrintWriter(os);//将输出流包装成打印流
-                                pw.write(hashMap.toString());
-                                pw.flush();
-                                //SoftApplication.socket.shutdownOutput();
-                                //3、获取输入流，并读取服务器端的响应信息
-//                                    InputStream is = SoftApplication.socket.getInputStream();
-//                                    BufferedReader br = new BufferedReader(new InputStreamReader(is));
-//                                    String info = null;
-//                                    while ((info = br.readLine()) != null) {
-//                                        System.out.println("客户端返回信息" + info);
-//                                    }
-//                                    //4、关闭资源
-//                                    br.close();
-//                                    is.close();
-                                pw.close();
-                                os.close();
-                                //SoftApplication.socket.close();
-
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }).start();
-
+                    if (sendMessageListener != null){
+                        sendMessageListener.sendMessage(hashMap.toString());
+                    }
                 } else {
-                    fragmentActivity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(fragmentActivity, "IP不正常", Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                    fragmentActivity.runOnUiThread(() -> Toast.makeText(fragmentActivity, "IP不正常", Toast.LENGTH_SHORT).show());
                     return false;
                 }
 
@@ -219,5 +178,13 @@ public class PushMessCache {
         return false;
     }
 
+    private SendMessageListener sendMessageListener;
 
+    public void setSendMessageListener(SendMessageListener sendMessageListener) {
+        this.sendMessageListener = sendMessageListener;
+    }
+
+    public interface SendMessageListener{
+        void sendMessage(String message);
+    }
 }
