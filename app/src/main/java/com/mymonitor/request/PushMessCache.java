@@ -177,7 +177,7 @@ public class PushMessCache {
                     }
 
                     if (sendMessageListener != null)
-                        sendMessageListener.sendMessage( hashMap.toString());
+                        sendMessageListener.sendMessage(hashMap.toString());
 
                 } else {
                     fragmentActivity.runOnUiThread(() -> Toast.makeText(fragmentActivity, "IP不正常", Toast.LENGTH_SHORT).show());

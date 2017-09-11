@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        if (socketClient == null || !socketClient.isConnecting()){
+        if (socketClient == null || !socketClient.isConnecting()) {
             socketClient = new SocketClient();
             socketClient.setCharsetName(CharsetUtil.UTF_8);
 
@@ -118,30 +118,26 @@ public class MainActivity extends AppCompatActivity {
             socketClient.getHeartBeatHelper().setHeartBeatInterval(60 * 1000);// 设置自动发送心跳包的间隔时长，单位毫秒
             socketClient.getHeartBeatHelper().setSendHeartBeatEnabled(true);// 设置允许自动发送心跳包，此值默认为 false
 
+            socketClient.registerSocketClientDelegate(new SocketClientDelegate() {
+                @Override
+                public void onConnected(SocketClient client) {
+
+                }
+
+                @Override
+                public void onDisconnected(SocketClient client) {
+                    //实现自动重连
+                    client.connect();
+                }
+
+                @Override
+                public void onResponse(SocketClient client, @NonNull SocketResponsePacket responsePacket) {
+
+                }
+            });
+
             //实现自动重连
             socketClient.connect();
-
-//            SocketHeartBeatHelper.SendDataBuilder sendDataBuilder = new SocketHeartBeatHelper.SendDataBuilder() {
-//                @Override
-//                public byte[] obtainSendHeartBeatData(SocketHeartBeatHelper helper) {
-//                    /**
-//                     * 使用当前日期作为心跳包
-//                     */
-//                    byte[] heartBeatPrefix = new byte[]{0x1F, 0x1F};
-//                    byte[] heartBeatSuffix = new byte[]{0x1F, 0x1F};
-//
-//                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-//                    byte[] heartBeatInfo = CharsetUtil.stringToData(sdf.format(new Date()), CharsetUtil.UTF_8);
-//
-//                    byte[] data = new byte[heartBeatPrefix.length + heartBeatSuffix.length + heartBeatInfo.length];
-//                    System.arraycopy(heartBeatPrefix, 0, data, 0, heartBeatPrefix.length);
-//                    System.arraycopy(heartBeatInfo, 0, data, heartBeatPrefix.length, heartBeatInfo.length);
-//                    System.arraycopy(heartBeatSuffix, 0, data, heartBeatPrefix.length + heartBeatInfo.length, heartBeatSuffix.length);
-//
-//                    return data;
-//                }
-//            };
-//            socketClient.getHeartBeatHelper().setSendDataBuilder(sendDataBuilder);
         }
     }
 
@@ -206,24 +202,14 @@ public class MainActivity extends AppCompatActivity {
             myAdapter.setNotificationBeans(notificationBeans);
             myAdapter.notifyDataSetChanged();
 
-            pushIns.setSendMessageListener(message -> socketClient.registerSocketClientDelegate(new SocketClientDelegate() {
+            pushIns.setSendMessageListener(new PushMessCache.SendMessageListener() {
                 @Override
-                public void onConnected(SocketClient client) {
+                public void sendMessage(String message) {
                     // 发送String消息，使用默认编码
                     socketClient.sendString(message);
                 }
+            });
 
-                @Override
-                public void onDisconnected(SocketClient client) {
-                    socketClient.connect();
-                }
-
-                @Override
-                public void onResponse(SocketClient client, @NonNull SocketResponsePacket responsePacket) {
-                    if (client.isDisconnecting())
-                        client.connect();
-                }
-            }));
             pushIns.sendMess(this, data);
 
         } catch (Exception e) {
