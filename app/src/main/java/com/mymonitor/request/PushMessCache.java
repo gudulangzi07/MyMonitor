@@ -5,11 +5,9 @@ import android.text.TextUtils;
 import android.widget.Toast;
 
 import com.alibaba.fastjson.JSONObject;
-import com.mymonitor.activity.MainActivity;
 import com.mymonitor.utils.AppLog;
 import com.mymonitor.utils.PreferenceManager;
 import com.mymonitor.utils.VerifyCheck;
-import com.vilyever.socketclient.helper.SocketClientAddress;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.Callback;
 
@@ -166,19 +164,9 @@ public class PushMessCache {
             } else if ("1".equals(PreferenceManager.getInstance().getSettingMethod())) {
                 String[] strings = PreferenceManager.getInstance().getSettingUrlNotification().split(":");
                 if (VerifyCheck.isIPVerify(strings[0])) {
-
-                    SocketClientAddress socketClientAddress = ((MainActivity)fragmentActivity).getSocketClient().getAddress();
-                    socketClientAddress.setRemoteIP(strings[0]);
-                    socketClientAddress.setRemotePort(strings[1]);
-                    socketClientAddress.setConnectionTimeout(15 * 1000);
-
-                    if (((MainActivity)fragmentActivity).getSocketClient().isDisconnecting()){
-                        ((MainActivity)fragmentActivity).getSocketClient().connect();
-                    }
-
-                    if (sendMessageListener != null)
+                    if (sendMessageListener != null){
                         sendMessageListener.sendMessage(hashMap.toString());
-
+                    }
                 } else {
                     fragmentActivity.runOnUiThread(() -> Toast.makeText(fragmentActivity, "IP不正常", Toast.LENGTH_SHORT).show());
                     return false;
@@ -192,12 +180,11 @@ public class PushMessCache {
 
     private SendMessageListener sendMessageListener;
 
-    public interface SendMessageListener{
-        void sendMessage(String message);
-    }
-
     public void setSendMessageListener(SendMessageListener sendMessageListener) {
         this.sendMessageListener = sendMessageListener;
     }
 
+    public interface SendMessageListener{
+        void sendMessage(String message);
+    }
 }

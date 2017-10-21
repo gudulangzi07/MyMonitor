@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -30,6 +31,7 @@ import com.mymonitor.widget.XRecyclerView.ProgressStyle;
 import com.mymonitor.widget.XRecyclerView.XRecyclerView;
 import com.mymonitor.widget.XRecyclerView.decoration.DividerItemDecoration;
 import com.vilyever.socketclient.SocketClient;
+import com.vilyever.socketclient.helper.SocketClientAddress;
 import com.vilyever.socketclient.helper.SocketClientDelegate;
 import com.vilyever.socketclient.helper.SocketResponsePacket;
 import com.vilyever.socketclient.util.CharsetUtil;
@@ -57,10 +59,25 @@ public class MainActivity extends AppCompatActivity {
     private static MainActivity activity = null;
     private List<NotificationBean> notificationBeans;
     private SocketClient socketClient;
+    private Handler handler = new Handler();
 
-    public SocketClient getSocketClient() {
-        return socketClient;
-    }
+    private Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            if (socketClient != null && !socketClient.isConnected()){
+                SocketClientAddress socketClientAddress = socketClient.getAddress();
+                String[] strings = PreferenceManager.getInstance().getSettingUrlNotification().split(":");
+                socketClientAddress.setRemoteIP(strings[0]);
+                socketClientAddress.setRemotePort(strings[1]);
+                socketClientAddress.setConnectionTimeout(15 * 1000);
+
+                socketClient.setAddress(socketClientAddress);
+                socketClient.connect();
+            }
+
+            handler.postDelayed(this, 5000);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         activity = this;
         pushIns = new PushMessCache();
+
         PreferenceManager.init(this);
         myAdapter = new MyAdapter();
         notificationBeans = new ArrayList<>();
@@ -113,10 +131,12 @@ public class MainActivity extends AppCompatActivity {
             socketClient = new SocketClient();
             socketClient.setCharsetName(CharsetUtil.UTF_8);
 
-            socketClient.getHeartBeatHelper().setDefaultSendData(CharsetUtil.stringToData("HeartBeat", CharsetUtil.UTF_8));
-            socketClient.getHeartBeatHelper().setDefaultReceiveData(CharsetUtil.stringToData("HeartBeat", CharsetUtil.UTF_8));
-            socketClient.getHeartBeatHelper().setHeartBeatInterval(60 * 1000);// 设置自动发送心跳包的间隔时长，单位毫秒
-            socketClient.getHeartBeatHelper().setSendHeartBeatEnabled(true);// 设置允许自动发送心跳包，此值默认为 false
+//            socketClient.getHeartBeatHelper().setDefaultSendData(CharsetUtil.stringToData("HeartBeat", CharsetUtil.UTF_8));
+//            socketClient.getHeartBeatHelper().setDefaultReceiveData(CharsetUtil.stringToData("HeartBeat", CharsetUtil.UTF_8));
+//            socketClient.getHeartBeatHelper().setHeartBeatInterval(60 * 1000);// 设置自动发送心跳包的间隔时长，单位毫秒
+//            socketClient.getHeartBeatHelper().setSendHeartBeatEnabled(true);// 设置允许自动发送心跳包，此值默认为 false
+
+            handler.postDelayed(runnable, 5000);
 
             socketClient.registerSocketClientDelegate(new SocketClientDelegate() {
                 @Override
@@ -135,17 +155,7 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             });
-
-            //实现自动重连
-            socketClient.connect();
         }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (socketClient.isConnecting())
-            socketClient.disconnect();
     }
 
     private void updateServiceStatus(boolean start) {
@@ -202,10 +212,12 @@ public class MainActivity extends AppCompatActivity {
             myAdapter.setNotificationBeans(notificationBeans);
             myAdapter.notifyDataSetChanged();
 
-            pushIns.setSendMessageListener(new PushMessCache.SendMessageListener() {
-                @Override
-                public void sendMessage(String message) {
+            pushIns.setSendMessageListener(message -> {
+                if (socketClient.isConnected())
                     // 发送String消息，使用默认编码
+                    socketClient.sendString(message);
+                else{
+                    socketClient.connect();
                     socketClient.sendString(message);
                 }
             });
@@ -268,11 +280,29 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.action_url:
                 PreferenceManager.getInstance().setSettingMethod("0");
-                DialogUtils.dialogCenterEditText(this, dialogStr -> PreferenceManager.getInstance().setSettingUrlNotification(dialogStr));
+                DialogUtils.dialogCenterEditText(this, dialogStr -> {
+                    PreferenceManager.getInstance().setSettingUrlNotification(dialogStr);
+                    if (socketClient != null && socketClient.isConnecting()) {
+                        socketClient.disconnect();
+                    }
+                });
                 break;
             case R.id.action_socket:
                 PreferenceManager.getInstance().setSettingMethod("1");
-                DialogUtils.dialogCenterEditText(this, dialogStr -> PreferenceManager.getInstance().setSettingUrlNotification(dialogStr));
+                DialogUtils.dialogCenterEditText(this, dialogStr -> {
+                    PreferenceManager.getInstance().setSettingUrlNotification(dialogStr);
+
+                    SocketClientAddress socketClientAddress = socketClient.getAddress();
+                    String[] strings = dialogStr.split(":");
+                    socketClientAddress.setRemoteIP(strings[0]);
+                    socketClientAddress.setRemotePort(strings[1]);
+                    socketClientAddress.setConnectionTimeout(15 * 1000);
+
+                    socketClient.setAddress(socketClientAddress);
+
+                    socketClient.connect();
+                });
+
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -282,6 +312,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         updateServiceStatus(false);
+        if (socketClient.isConnecting())
+            socketClient.disconnect();
     }
 
 }
